@@ -46,7 +46,7 @@ service cloud.firestore {
     // 2. Posts Collection
     match /posts/{postId} {
       allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && isValidId(postId) && incoming().authorId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(postId) && (incoming().authorId == request.auth.uid || incoming().authorId == 'isseg-ia-bot');
       allow update: if isSignedIn() && isValidId(postId);
       allow delete: if isSignedIn() && isValidId(postId);
 

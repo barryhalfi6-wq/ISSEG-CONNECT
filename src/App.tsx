@@ -100,33 +100,6 @@ function MainApp() {
         onOpenInstall={deferredPrompt ? triggerInstall : undefined}
       />
 
-      {/* Mobile PWA Install Banner */}
-      {deferredPrompt && showInstallBanner && (
-        <div className="bg-gradient-to-r from-[#10152f] to-[#0878b9] text-white px-4 py-2.5 flex items-center justify-between shadow-md">
-          <div className="flex items-center gap-2.5">
-            <span className="text-xl">📲</span>
-            <div>
-              <p className="text-xs font-bold leading-tight">Installer ISSEG Connect</p>
-              <p className="text-[10px] text-blue-100">Ajoute l'application sur ton écran d'accueil</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={triggerInstall}
-              className="px-3 py-1 bg-white text-[#10152f] text-xs font-bold rounded-lg shadow-sm hover:bg-slate-100"
-            >
-              Installer
-            </button>
-            <button
-              onClick={() => setShowInstallBanner(false)}
-              className="text-white/70 hover:text-white p-1 text-xs"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Main Page Content */}
       <main className="flex-1 w-full max-w-5xl mx-auto">
         {currentPage === 'home' && (

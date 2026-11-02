@@ -138,6 +138,100 @@ export async function deletePost(postId: string): Promise<void> {
   }
 }
 
+export function subscribeToUserPosts(userId: string, callback: (posts: PostItem[]) => void) {
+  const path = 'posts';
+  const q = query(
+    collection(db, 'posts'),
+    where('authorId', '==', userId),
+    limit(50)
+  );
+  return onSnapshot(q, (snapshot) => {
+    const items: PostItem[] = [];
+    snapshot.forEach((docSnap) => {
+      items.push({ id: docSnap.id, ...(docSnap.data() as Omit<PostItem, 'id'>) });
+    });
+    items.sort((a, b) => {
+      const timeA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0);
+      const timeB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0);
+      return timeB - timeA;
+    });
+    callback(items);
+  }, (error) => {
+    handleFirestoreError(error, OperationType.LIST, path);
+  });
+}
+
+// -------------------------------------------------------------
+// COMPTE IA ACADÉMIQUE : Publications didactiques automatiques
+// -------------------------------------------------------------
+export const AI_DIDACTIC_POSTS_BANK = [
+  {
+    content: "💡 Conseil Didactique du Jour :\nDans l'Approche Par Compétences (APC) en vigueur en Guinée, évitez de donner la règle avant l'exemple. Partez toujours d'une situation-problème concrète tirée du quotidien de l'élève (ex: le marché de Madina, le fleuve Niger, la vie communautaire) pour susciter le besoin d'apprendre.",
+    tag: '#DidactiqueIA',
+    topic: 'Méthodologie APC'
+  },
+  {
+    content: "📘 Pratique de Classe en Stage :\nPour une gestion efficace du tableau noir à deux battants : divisez votre tableau en 3 colonnes distinctes :\n1️⃣ À gauche : Rappels, date et plan de la leçon\n2️⃣ Au centre : Déroulement de la séance, schémas et calculs\n3️⃣ À droite : Nouveau vocabulaire, mots difficiles et devoirs à la maison.",
+    tag: '#StagePratique',
+    topic: 'Gestion du Tableau'
+  },
+  {
+    content: "🧠 Motivation & Climat Scolaire :\nUn élève qui a peur du maître ne peut pas développer sa pensée critique. Privilégiez l'erreur constructive : lorsqu'un élève se trompe en classe, valorisez sa participation et demandez à un camarade de l'aider avec bienveillance à identifier le point de blocage.",
+    tag: '#Psychopédagogie',
+    topic: 'Climat de classe'
+  },
+  {
+    content: "📊 Évaluation Formative vs Sommative :\nL'évaluation formative ne sert pas à noter ou sanctionner l'élève, mais à réguler votre propre enseignement ! Si plus de 40% de vos élèves échouent à un exercice d'application, cela signifie que la phase d'institutionnalisation doit être reprise différemment.",
+    tag: '#Docimologie',
+    topic: 'Évaluation'
+  },
+  {
+    content: "🔬 Didactique des Sciences Expérimentales :\nLe manque de matériel de laboratoire n'est pas un frein : utilisez la méthode 'Expérimentation avec du matériel local' (bouteilles plastiques, eau de chaux artisanale, graines germées locales). C'est le cœur même de la didactique moderne à l'ISSEG Lambanyi.",
+    tag: '#SciencesDidactique',
+    topic: 'Matériel Local'
+  },
+  {
+    content: "✍️ Didactique du Français & Expression Écrite :\nAvant de faire rédiger une production d'écrit aux élèves de collège (9ème - 10ème année), faites toujours une séance préalable de constitution de 'boîte à mots' (champ lexical, connecteurs logiques, verbes d'action). L'inspiration s'appuie d'abord sur la maîtrise des outils de la langue.",
+    tag: '#FrançaisDidactique',
+    topic: 'Production Écrite'
+  }
+];
+
+export async function publishAIBotInsight(forceIndex?: number): Promise<string> {
+  const path = 'posts';
+  try {
+    const idx = forceIndex !== undefined ? forceIndex : Math.floor(Math.random() * AI_DIDACTIC_POSTS_BANK.length);
+    const chosen = AI_DIDACTIC_POSTS_BANK[idx];
+    const docRef = await addDoc(collection(db, 'posts'), {
+      authorId: 'isseg-ia-bot',
+      authorName: 'Assistant Didactique IA 🤖',
+      authorProgram: 'Intelligence Pédagogique ISSEG',
+      department: 'Sciences de l\'Éducation',
+      content: chosen.content,
+      tag: chosen.tag,
+      isOfficial: true,
+      likes: [],
+      commentsCount: 0,
+      createdAt: serverTimestamp()
+    });
+    return docRef.id;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, path);
+  }
+}
+
+export async function checkAndSeedAIBotIfEmpty(): Promise<void> {
+  try {
+    const q = query(collection(db, 'posts'), where('authorId', '==', 'isseg-ia-bot'), limit(1));
+    const snap = await getDocs(q);
+    if (snap.empty) {
+      await publishAIBotInsight(0);
+    }
+  } catch (error) {
+    console.warn('Could not auto-seed AI post:', error);
+  }
+}
+
 export async function votePoll(postId: string, optionId: string, userId: string): Promise<void> {
   const path = `posts/${postId}`;
   try {

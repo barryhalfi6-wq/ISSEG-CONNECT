@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { subscribeToUserPosts, deletePost } from '../services/dataService';
+import { PostItem } from '../types';
 import {
   User,
   GraduationCap,
@@ -12,7 +14,15 @@ import {
   MapPin,
   CheckCircle2,
   X,
-  Save
+  Save,
+  Trash2,
+  Heart,
+  MessageCircle,
+  BarChart2,
+  HelpCircle,
+  Radio,
+  Sparkles,
+  Camera
 } from 'lucide-react';
 
 interface ProfileViewProps {
@@ -23,7 +33,8 @@ interface ProfileViewProps {
 export const ProfileView: React.FC<ProfileViewProps> = ({ onNotify, onNavigate }) => {
   const { currentUser, profile, logout, updateProfileData } = useAuth();
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isInstallGuideOpen, setIsInstallGuideOpen] = useState(false);
+  const [userPosts, setUserPosts] = useState<PostItem[]>([]);
+  const [loadingPosts, setLoadingPosts] = useState(true);
 
   // Edit form state
   const [editFirstName, setEditFirstName] = useState(profile?.firstName || '');
@@ -33,6 +44,19 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onNotify, onNavigate }
   const [editLevel, setEditLevel] = useState(profile?.level || 'Licence 2');
   const [editBio, setEditBio] = useState(profile?.bio || '');
   const [saving, setSaving] = useState(false);
+
+  // Subscribe to user's posts in real-time
+  useEffect(() => {
+    if (!currentUser) return;
+    setLoadingPosts(true);
+    const unsub = subscribeToUserPosts(currentUser.uid, (posts) => {
+      setUserPosts(posts);
+      setLoadingPosts(false);
+    });
+    return () => unsub();
+  }, [currentUser]);
+
+  const totalLikesReceived = userPosts.reduce((acc, p) => acc + (p.likes?.length || 0), 0);
 
   const getInitials = (name?: string) => {
     if (!name) return 'IS';
@@ -64,6 +88,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onNotify, onNavigate }
     }
   };
 
+  const handleDeleteMyPost = async (postId: string) => {
+    if (!window.confirm('Voulez-vous supprimer définitivement cette publication de votre profil ?')) return;
+    try {
+      await deletePost(postId);
+      onNotify('Publication supprimée avec succès.', 'info');
+    } catch (err: any) {
+      onNotify('Erreur lors de la suppression de la publication', 'error');
+    }
+  };
+
   const handleLogout = async () => {
     if (!window.confirm('Es-tu sûr de vouloir te déconnecter ?')) return;
     try {
@@ -74,8 +108,19 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onNotify, onNavigate }
     }
   };
 
+  const formatTimestamp = (ts: any) => {
+    if (!ts) return 'Récemment';
+    try {
+      const date = ts.toDate ? ts.toDate() : new Date(ts);
+      return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) +
+        ' · ' + date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    } catch {
+      return 'Récemment';
+    }
+  };
+
   return (
-    <div className="max-w-2xl mx-auto space-y-4 pb-24 pt-4 px-3 sm:px-0">
+    <div className="max-w-2xl mx-auto space-y-5 pb-24 pt-4 px-3 sm:px-0">
       {/* Header Profile Card */}
       <div className="bg-gradient-to-tr from-[#07558c] via-[#0878b9] to-[#8060ed] rounded-3xl p-6 text-white text-center shadow-xl shadow-blue-900/10 relative overflow-hidden">
         <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-3xl bg-white text-[#0878b9] flex items-center justify-center text-2xl sm:text-3xl font-black shadow-lg mb-3 border-4 border-white/30">
@@ -98,21 +143,23 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onNotify, onNavigate }
         )}
       </div>
 
-      {/* Stats bar */}
+      {/* Stats bar (Facebook-style) */}
       <div className="grid grid-cols-3 gap-2 bg-white rounded-3xl p-4 border border-slate-100 shadow-sm text-center">
         <div className="space-y-0.5">
-          <strong className="block text-lg font-black text-[#0878b9]">Étudiant</strong>
-          <small className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Statut</small>
+          <strong className="block text-xl font-black text-[#0878b9]">{userPosts.length}</strong>
+          <small className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Publications</small>
         </div>
         <div className="space-y-0.5 border-x border-slate-100">
-          <strong className="block text-lg font-black text-[#0878b9] truncate px-1">
+          <strong className="block text-xl font-black text-rose-500">
+            {totalLikesReceived}
+          </strong>
+          <small className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Likes reçus</small>
+        </div>
+        <div className="space-y-0.5">
+          <strong className="block text-lg font-black text-emerald-600 truncate px-1">
             {profile?.department || 'Sciences'}
           </strong>
           <small className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Pôle</small>
-        </div>
-        <div className="space-y-0.5">
-          <strong className="block text-lg font-black text-emerald-600">Vérifié</strong>
-          <small className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Compte</small>
         </div>
       </div>
 
@@ -145,23 +192,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onNotify, onNavigate }
 
         <button
           type="button"
-          onClick={() => setIsInstallGuideOpen(true)}
-          className="w-full bg-white hover:bg-slate-50 border border-slate-100 rounded-2xl p-4 flex items-center justify-between text-left transition-all shadow-xs group"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg">
-              📲
-            </div>
-            <div>
-              <h4 className="text-xs sm:text-sm font-bold text-slate-800">Installer sur mon téléphone</h4>
-              <p className="text-[11px] text-slate-400">Guide d'installation sur Android & iPhone</p>
-            </div>
-          </div>
-          <span className="text-slate-300 group-hover:text-slate-600 transition-colors">›</span>
-        </button>
-
-        <button
-          type="button"
           onClick={() => onNavigate('documents')}
           className="w-full bg-white hover:bg-slate-50 border border-slate-100 rounded-2xl p-4 flex items-center justify-between text-left transition-all shadow-xs group"
         >
@@ -176,22 +206,140 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onNotify, onNavigate }
           </div>
           <span className="text-slate-300 group-hover:text-slate-600 transition-colors">›</span>
         </button>
+      </div>
 
-        <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-xs">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-              <Info className="w-4 h-4" />
-            </div>
-            <div>
-              <h4 className="text-xs sm:text-sm font-bold text-slate-800">À propos de l'ISSEG</h4>
-              <p className="text-[11px] text-slate-400">Institut Supérieur des Sciences de l'Éducation de Guinée</p>
-            </div>
-          </div>
-          <p className="text-xs text-slate-500 leading-relaxed pl-12">
-            L'ISSEG forme les cadres enseignants, inspecteurs et pédagogues de la République de Guinée. Cette plateforme connecte les étudiants pour faciliter le partage académique et l'entraide pédagogique.
-          </p>
+      {/* FACEBOOK-STYLE USER TIMELINE : "MES PUBLICATIONS" */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
+            <span>📝</span> Mes Publications ({userPosts.length})
+          </h3>
+          <span className="text-xs text-slate-400">Visibles sur le fil du campus</span>
         </div>
 
+        {loadingPosts ? (
+          <div className="p-8 text-center bg-white rounded-2xl border border-slate-100">
+            <div className="w-6 h-6 border-2 border-[#0878b9] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+            <p className="text-xs text-slate-400">Chargement de vos publications...</p>
+          </div>
+        ) : userPosts.length === 0 ? (
+          <div className="bg-white rounded-2xl p-8 text-center border border-slate-100 shadow-xs">
+            <div className="w-12 h-12 rounded-full bg-blue-50 text-[#0878b9] flex items-center justify-center mx-auto mb-3">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <h4 className="font-bold text-slate-800 text-sm">Vous n'avez pas encore publié</h4>
+            <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+              Partagez une question de cours, une annonce de stage ou lancez un sondage avec vos camarades de l'ISSEG !
+            </p>
+            <button
+              type="button"
+              onClick={() => onNavigate('home')}
+              className="mt-4 px-4 py-2 bg-[#0878b9] text-white text-xs font-bold rounded-xl shadow-xs hover:bg-[#07558c] transition-colors"
+            >
+              Créer ma première publication
+            </button>
+          </div>
+        ) : (
+          userPosts.map((post) => (
+            <div
+              key={post.id}
+              className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow space-y-3"
+            >
+              {/* Post Header */}
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#0878b9] to-[#8060ed] text-white flex items-center justify-center text-xs font-bold">
+                    {getInitials(profile?.fullName)}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <strong className="text-xs sm:text-sm font-bold text-slate-800">
+                        {profile?.fullName || 'Moi'}
+                      </strong>
+                      {post.tag && (
+                        <span className="px-2 py-0.5 rounded-full bg-blue-50 text-[#0878b9] text-[10px] font-bold">
+                          {post.tag}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+                      {formatTimestamp(post.createdAt)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* DELETE BUTTON */}
+                <button
+                  type="button"
+                  onClick={() => handleDeleteMyPost(post.id)}
+                  title="Supprimer cette publication"
+                  className="p-2 text-slate-400 hover:text-rose-600 rounded-xl hover:bg-rose-50 transition-colors flex items-center gap-1 text-xs font-semibold"
+                >
+                  <Trash2 className="w-4 h-4 text-rose-500" />
+                  <span className="hidden xs:inline text-rose-600">Supprimer</span>
+                </button>
+              </div>
+
+              {/* Content text */}
+              {post.content && (
+                <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                  {post.content}
+                </p>
+              )}
+
+              {/* Media photo if any */}
+              {post.mediaUrl && (
+                <div className="rounded-2xl overflow-hidden border border-slate-100 max-h-72 bg-slate-50">
+                  <img
+                    src={post.mediaUrl}
+                    alt="Photo"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+
+              {/* Poll if attached */}
+              {post.poll && (
+                <div className="p-3.5 bg-blue-50/60 rounded-2xl border border-blue-100 space-y-2">
+                  <span className="text-xs font-bold text-[#0878b9] flex items-center gap-1.5">
+                    <BarChart2 className="w-3.5 h-3.5" />
+                    {post.poll.question}
+                  </span>
+                  <div className="space-y-1.5">
+                    {post.poll.options.map((opt) => (
+                      <div
+                        key={opt.id}
+                        className="bg-white p-2 rounded-xl text-xs flex justify-between border border-slate-100"
+                      >
+                        <span className="font-medium text-slate-700">{opt.text}</span>
+                        <span className="font-bold text-[#0878b9]">{opt.votes?.length || 0} vote(s)</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Post Footer with Likes & Comments Count */}
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                <div className="flex items-center gap-4">
+                  <span className="flex items-center gap-1 font-semibold text-rose-500">
+                    <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />
+                    {post.likes?.length || 0}
+                  </span>
+                  <span className="flex items-center gap-1 font-semibold text-slate-500">
+                    <MessageCircle className="w-4 h-4 text-slate-400" />
+                    {post.commentsCount || 0}
+                  </span>
+                </div>
+                <span className="text-[11px] text-slate-400">ISSEG Connect</span>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Logout button */}
+      <div className="pt-2">
         <button
           type="button"
           onClick={handleLogout}
@@ -330,69 +478,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onNotify, onNavigate }
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* INSTALL GUIDE MODAL */}
-      {isInstallGuideOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 border border-slate-100 animate-fade-in max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-              <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
-                <span className="text-xl">📲</span>
-                Installer ISSEG Connect sur mobile
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsInstallGuideOpen(false)}
-                className="p-1 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-4 text-xs text-slate-600 leading-relaxed">
-              {/* Android Section */}
-              <div className="bg-emerald-50/70 border border-emerald-100 rounded-2xl p-3.5 space-y-2">
-                <div className="flex items-center gap-2 text-emerald-800 font-bold">
-                  <span className="text-base">🤖</span>
-                  <span>Sur Android (Google Chrome)</span>
-                </div>
-                <ol className="list-decimal list-inside space-y-1.5 text-slate-700 pl-1">
-                  <li>Ouvre le lien de l'application dans <strong>Chrome</strong>.</li>
-                  <li>Touche les <strong>3 petits points verticaux (⋮)</strong> en haut à droite.</li>
-                  <li>Sélectionne <strong>« Installer l'application »</strong> ou <strong>« Ajouter à l'écran d'accueil »</strong>.</li>
-                  <li>Clique sur <strong>Installer</strong>. L'icône ISSEG apparaîtra parmi tes applications comme une vraie appli native !</li>
-                </ol>
-              </div>
-
-              {/* iPhone Section */}
-              <div className="bg-blue-50/70 border border-blue-100 rounded-2xl p-3.5 space-y-2">
-                <div className="flex items-center gap-2 text-[#0878b9] font-bold">
-                  <span className="text-base">🍎</span>
-                  <span>Sur iPhone / iPad (Safari)</span>
-                </div>
-                <ol className="list-decimal list-inside space-y-1.5 text-slate-700 pl-1">
-                  <li>Ouvre le lien de l'application dans <strong>Safari</strong>.</li>
-                  <li>Touche le bouton de <strong>Partage</strong> (le carré avec une flèche vers le haut ⎋ en bas de l'écran).</li>
-                  <li>Fais défiler la liste vers le bas et touche <strong>« Sur l'écran d'accueil » (➕)</strong>.</li>
-                  <li>Touche <strong>Ajouter</strong> en haut à droite.</li>
-                </ol>
-              </div>
-
-              <div className="p-3 bg-slate-50 rounded-2xl text-[11px] text-slate-500">
-                💡 <em>Une fois installée, l'application fonctionne en plein écran, sans barre de navigation navigateur, et stocke tes données en temps réel !</em>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsInstallGuideOpen(false)}
-                className="w-full py-2.5 bg-[#10152f] text-white font-bold rounded-xl text-xs hover:bg-slate-800 transition-colors"
-              >
-                Compris !
-              </button>
-            </div>
           </div>
         </div>
       )}
