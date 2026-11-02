@@ -1,0 +1,181 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Profil étudiant ou enseignant de l'ISSEG",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "firstName": { "type": "string", "maxLength": 100 },
+        "lastName": { "type": "string", "maxLength": 100 },
+        "fullName": { "type": "string", "maxLength": 200 },
+        "department": { "type": "string", "maxLength": 100 },
+        "program": { "type": "string", "maxLength": 100 },
+        "level": { "type": "string", "maxLength": 50 },
+        "institution": { "type": "string", "maxLength": 100 },
+        "ine": { "type": "string", "maxLength": 50 },
+        "studentCardPhotoUrl": { "type": "string" },
+        "role": { "type": "string", "enum": ["student", "teacher", "admin"] },
+        "verificationStatus": { "type": "string", "enum": ["pending", "approved", "rejected", "missing_card"] },
+        "photoURL": { "type": "string", "maxLength": 1000 },
+        "bio": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "fullName", "department", "program", "level"]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "Publication sur le fil d'actualité ISSEG",
+      "type": "object",
+      "properties": {
+        "authorId": { "type": "string", "maxLength": 128 },
+        "authorName": { "type": "string", "maxLength": 200 },
+        "authorProgram": { "type": "string", "maxLength": 100 },
+        "content": { "type": "string", "maxLength": 2000 },
+        "department": { "type": "string", "maxLength": 100 },
+        "likes": { "type": "array" },
+        "commentsCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["authorId", "authorName", "content"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "Commentaire sous une publication",
+      "type": "object",
+      "properties": {
+        "authorId": { "type": "string", "maxLength": 128 },
+        "authorName": { "type": "string", "maxLength": 200 },
+        "content": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["authorId", "authorName", "content"]
+    },
+    "Group": {
+      "title": "Group",
+      "description": "Groupe d'étude disciplinaire ou académique",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 150 },
+        "description": { "type": "string", "maxLength": 500 },
+        "department": { "type": "string", "maxLength": 100 },
+        "creatorId": { "type": "string", "maxLength": 128 },
+        "creatorName": { "type": "string", "maxLength": 200 },
+        "members": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "creatorId", "members"]
+    },
+    "GroupMessage": {
+      "title": "GroupMessage",
+      "description": "Message partagé dans un groupe d'étude",
+      "type": "object",
+      "properties": {
+        "groupId": { "type": "string", "maxLength": 128 },
+        "authorId": { "type": "string", "maxLength": 128 },
+        "authorName": { "type": "string", "maxLength": 200 },
+        "content": { "type": "string", "maxLength": 2000 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["groupId", "authorId", "authorName", "content"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "Conversation privée entre deux étudiants",
+      "type": "object",
+      "properties": {
+        "participants": { "type": "array" },
+        "participantNames": { "type": "object" },
+        "lastMessage": { "type": "string", "maxLength": 500 },
+        "lastSenderId": { "type": "string", "maxLength": 128 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["participants"]
+    },
+    "DirectMessage": {
+      "title": "DirectMessage",
+      "description": "Message direct dans une conversation",
+      "type": "object",
+      "properties": {
+        "conversationId": { "type": "string", "maxLength": 128 },
+        "senderId": { "type": "string", "maxLength": 128 },
+        "senderName": { "type": "string", "maxLength": 200 },
+        "receiverId": { "type": "string", "maxLength": 128 },
+        "content": { "type": "string", "maxLength": 2000 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["conversationId", "senderId", "receiverId", "content"]
+    },
+    "CourseDocument": {
+      "title": "CourseDocument",
+      "description": "Support de cours ou ressource pédagogique partagée",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 200 },
+        "course": { "type": "string", "maxLength": 150 },
+        "department": { "type": "string", "maxLength": 100 },
+        "level": { "type": "string", "maxLength": 50 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "authorId": { "type": "string", "maxLength": 128 },
+        "authorName": { "type": "string", "maxLength": 200 },
+        "fileType": { "type": "string", "maxLength": 50 },
+        "fileUrl": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "course", "department", "authorId", "authorName"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "Alerte ou notification utilisateur",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "message": { "type": "string", "maxLength": 1000 },
+        "type": { "type": "string", "enum": ["system", "post", "message", "group"] },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "message"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "#/entities/User",
+      "description": "Profils des membres de l'université ISSEG"
+    },
+    "/posts/{postId}": {
+      "schema": "#/entities/Post",
+      "description": "Publications du fil d'actualité universitaire"
+    },
+    "/posts/{postId}/comments/{commentId}": {
+      "schema": "#/entities/Comment",
+      "description": "Commentaires sous les publications"
+    },
+    "/groups/{groupId}": {
+      "schema": "#/entities/Group",
+      "description": "Groupes d'études et de filières"
+    },
+    "/groups/{groupId}/messages/{messageId}": {
+      "schema": "#/entities/GroupMessage",
+      "description": "Messages échangés dans un groupe"
+    },
+    "/conversations/{conversationId}": {
+      "schema": "#/entities/Conversation",
+      "description": "Salons de messagerie directe"
+    },
+    "/conversations/{conversationId}/messages/{messageId}": {
+      "schema": "#/entities/DirectMessage",
+      "description": "Messages privés individuels"
+    },
+    "/documents/{documentId}": {
+      "schema": "#/entities/CourseDocument",
+      "description": "Cours, résumés et épreuves"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "#/entities/Notification",
+      "description": "Notifications destinées à l'étudiant"
+    }
+  }
+}

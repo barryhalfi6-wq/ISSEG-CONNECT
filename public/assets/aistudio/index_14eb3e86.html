@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#10152f">
+    <meta name="description" content="ISSEG Connect : le réseau social et éducatif des étudiants de l'ISSEG.">
+    <title>ISSEG Connect</title>
+    <link rel="manifest" href="./manifest.json">
+    <link rel="stylesheet" href="./Css/style.css">
+    <link rel="icon" href="./Assets/icons/isseg-logo.png" type="image/png">
+</head>
+<body>
+
+    <!-- ================================= -->
+    <!-- 1. AUTHENTIFICATION -->
+    <!-- ================================= -->
+    <section id="auth" class="page active">
+        <div class="auth-container">
+            <div class="auth-brand">
+                <img src="./Assets/icons/isseg-logo.png" alt="Logo ISSEG">
+                <h1>ISSEG CONNECT</h1>
+                <p>Connecte-toi · Partage · Apprends · Réussis.</p>
+            </div>
+
+            <div class="auth-tabs">
+                <button type="button" id="showLogin" class="auth-tab active">Connexion</button>
+                <button type="button" id="showRegister" class="auth-tab">Inscription</button>
+            </div>
+
+            <!-- CONNEXION -->
+            <form id="loginForm">
+                <h2>Bienvenue !</h2>
+                <p>Connecte-toi à ton espace étudiant.</p>
+                <label for="loginEmail">Adresse email</label>
+                <input id="loginEmail" type="email" required autocomplete="email" placeholder="exemple@email.com">
+                <label for="loginPassword">Mot de passe</label>
+                <input id="loginPassword" type="password" required minlength="6" autocomplete="current-password" placeholder="Ton mot de passe">
+                <button type="submit" class="auth-submit">Se connecter</button>
+            </form>
+
+            <!-- INSCRIPTION -->
+            <form id="registerForm" hidden>
+                <h2>Créer un compte</h2>
+                <p>Rejoins la communauté universitaire de l'ISSEG.</p>
+                <label for="firstName">Prénom</label>
+                <input id="firstName" type="text" required autocomplete="given-name" placeholder="Ton prénom">
+                <label for="lastName">Nom</label>
+                <input id="lastName" type="text" required autocomplete="family-name" placeholder="Ton nom">
+                <label for="registerEmail">Adresse email</label>
+                <input id="registerEmail" type="email" required autocomplete="email" placeholder="exemple@email.com">
+                <label for="registerPassword">Mot de passe</label>
+                <input id="registerPassword" type="password" required minlength="6" autocomplete="new-password" placeholder="6 caractères minimum">
+                <label for="department">Département</label>
+                <select id="department" required>
+                    <option value="">Choisir un département</option>
+                    <option value="Sciences">Sciences</option>
+                    <option value="Lettres et sciences humaines">Lettres et sciences humaines</option>
+                    <option value="Langues">Langues</option>
+                    <option value="Autre">Autre</option>
+                </select>
+                <label for="program">Filière</label>
+                <select id="program" required>
+                    <option value="">Choisir une filière</option>
+                    <option value="Mathématiques-Physique">Mathématiques-Physique</option>
+                    <option value="Physique-Chimie-Technologie">Physique-Chimie-Technologie</option>
+                    <option value="Biologie-Géologie-Chimie">Biologie-Géologie-Chimie</option>
+                    <option value="Géographie-Économie">Géographie-Économie</option>
+                    <option value="Philosophie-Histoire-ECM">Philosophie-Histoire-ECM</option>
+                    <option value="Français">Français</option>
+                    <option value="Anglais">Anglais</option>
+                    <option value="Autre">Autre</option>
+                </select>
+                <label for="level">Niveau d'études</label>
+                <select id="level" required>
+                    <option value="">Choisir ton niveau</option>
+                    <option value="Licence 1">Licence 1</option>
+                    <option value="Licence 2">Licence 2</option>
+                    <option value="Licence 3">Licence 3</option>
+                    <option value="Master 1">Master 1</option>
+                    <option value="Master 2">Master 2</option>
+                    <option value="Autre">Autre</option>
+                </select>
+                <button type="submit" class="auth-submit">Créer mon compte</button>
+            </form>
+
+            <p class="auth-footer">Réservé à la communauté de l'ISSEG.</p>
+        </div>
+    </section>
+
+    <!-- ================================= -->
+    <!-- 2. APPLICATION PRINCIPALE -->
+    <!-- ================================= -->
+    <div id="appInterface" hidden>
+        <!-- EN-TÊTE -->
+        <header class="top-header">
+            <div class="brand">
+                <div class="brand-icon">
+                    <img src="./Assets/icons/isseg-logo.png" alt="ISSEG">
+                </div>
+                <div>
+                    <h1>ISSEG <span>CONNECT</span></h1>
+                    <p>La communauté universitaire</p>
+                </div>
+            </div>
+            <button class="notification-button" type="button" onclick="showPage('notifications')" aria-label="Notifications">
+                🔔
+                <span class="notification-dot"></span>
+            </button>
+        </header>
+
+        <!-- CONTENU PRINCIPAL -->
+        <main id="main-content">
+            <!-- ACCUEIL -->
+            <section id="home" class="page">
+                <div class="welcome-card">
+                    <div>
+                        <p class="welcome-small">Bienvenue sur ISSEG Connect</p>
+                        <h2 id="welcomeName">Bienvenue 👋</h2>
+                        <p>Ta communauté universitaire t'attend.</p>
+                    </div>
+                    <div class="welcome-icon">🎓</div>
+                </div>
+
+                <div class="section-heading">
+                    <h3>Communauté</h3>
+                    <span>Voir tout</span>
+                </div>
+
+                <div class="stories-container">
+                    <div class="story add-story">
+                        <div class="story-avatar">＋</div>
+                        <small>Ajouter</small>
+                    </div>
+                    <div class="story"><div class="story-avatar avatar-blue">A</div><small>Étudiants</small></div>
+                    <div class="story"><div class="story-avatar avatar-purple">F</div><small>Français</small></div>
+                    <div class="story"><div class="story-avatar avatar-orange">M</div><small>Maths</small></div>
+                    <div class="story"><div class="story-avatar avatar-green">L</div><small>Licence</small></div>
+                </div>
+
+                <div class="section-heading">
+                    <h3>Fil d'actualité</h3>
+                    <span>Récent</span>
+                </div>
+
+                <div class="post-composer">
+                    <div class="mini-avatar">IS</div>
+                    <button type="button" onclick="promptPost()">
+    Quoi de neuf dans ta vie universitaire ?
+</button>
+                </div>
+
+                <article class="post-card">
+                    <div class="post-header">
+                        <div class="post-avatar avatar-blue">IS</div>
+                        <div class="post-author">
+                            <strong>Communauté ISSEG</strong>
+                            <small>Publication de démonstration</small>
+                        </div>
+                        <span class="post-menu">•••</span>
+                    </div>
+                    <p class="post-text">Bienvenue dans ISSEG Connect ! Un espace conçu pour apprendre, partager et progresser ensemble.</p>
+                    <div class="post-reactions">
+                        <span>❤️ 24 réactions</span>
+                        <span>💬 8 commentaires</span>
+                    </div>
+                    <div class="post-actions">
+                        <button type="button" onclick="alert('Fonction bientôt disponible')">♡ J'aime</button>
+                        <button type="button" onclick="alert('Fonction bientôt disponible')">💬 Commenter</button>
+                        <button type="button" onclick="alert('Fonction bientôt disponible')">↗ Partager</button>
+                    </div>
+                </article>
+            </section>
+
+            <!-- GROUPES -->
+            <section id="groups" class="page">
+                <div class="page-title">
+                    <h2>Groupes d'études</h2>
+                    <p>Retrouve les étudiants de ta filière.</p>
+                </div>
+                <div class="group-card">
+                    <div class="group-icon purple-bg">📚</div>
+                    <div>
+                        <h3>Langue française</h3>
+                        <p>Échanges, cours et exercices</p>
+                        <small>Groupe de démonstration</small>
+                    </div>
+                    <button type="button" onclick="alert('Fonction bientôt disponible')">+</button>
+                </div>
+            </section>
+
+            <!-- MESSAGES -->
+            <section id="messages" class="page">
+                <div class="page-title">
+                    <h2>Messagerie</h2>
+                    <p>Communique avec tes camarades.</p>
+                </div>
+                <div class="conversation-card">
+                    <div class="conversation-avatar avatar-blue">AB</div>
+                    <div>
+                        <strong>Amadou Bah</strong>
+                        <p>Salut, tu as reçu le cours ?</p>
+                    </div>
+                    <small>10:30</small>
+                </div>
+            </section>
+
+            <!-- DOCUMENTS -->
+            <section id="documents" class="page">
+                <div class="page-title">
+                    <h2>Cours & Documents</h2>
+                    <p>Des ressources pour réussir tes études.</p>
+                </div>
+                <div class="document-card">
+                    <div class="document-icon">📕</div>
+                    <div>
+                        <strong>Littérature française</strong>
+                        <p>Document de démonstration · PDF</p>
+                    </div>
+                    <button type="button" onclick="alert('Fonction bientôt disponible')">↓</button>
+                </div>
+            </section>
+
+            <!-- NOTIFICATIONS -->
+            <section id="notifications" class="page">
+                <div class="page-title">
+                    <h2>Notifications</h2>
+                    <p>Les dernières activités de ta communauté.</p>
+                </div>
+                <div class="notification-card">
+                    <span>❤️</span>
+                    <p>Bienvenue dans la communauté ISSEG Connect.</p>
+                </div>
+            </section>
+
+            <!-- PROFIL -->
+            <section id="profile" class="page">
+                <div class="profile-header">
+                    <div class="profile-avatar">IS</div>
+                    <h2 id="profileName">Mon profil</h2>
+                    <p id="profileProgram">Étudiant ISSEG</p>
+                    <span>ISSEG · Lambanyi, Ratoma</span>
+                </div>
+                <div class="profile-stats">
+                    <div><strong>0</strong><small>Publications</small></div>
+                    <div><strong>0</strong><small>Abonnés</small></div>
+                    <div><strong>0</strong><small>Abonnements</small></div>
+                </div>
+                <div class="profile-option" onclick="alert('Fonction bientôt disponible')">👤 Modifier mon profil <span>›</span></div>
+                <div class="profile-option" onclick="alert('Fonction bientôt disponible')">⚙️ Paramètres <span>›</span></div>
+                <div class="profile-option" onclick="ISSEG_AUTH.logoutStudent()" style="color: #e11d48; font-weight: bold;">🚪 Se déconnecter <span>›</span></div>
+            </section>
+        </main>
+
+        <!-- NAVIGATION INFÉRIEURE -->
+        <nav class="bottom-navigation">
+            <button class="nav-item active" type="button" onclick="showPage('home', this)">
+                <span>⌂</span><small>Accueil</small>
+            </button>
+            <button class="nav-item" type="button" onclick="showPage('groups', this)">
+                <span>♧</span><small>Groupes</small>
+            </button>
+            <button class="nav-item" type="button" onclick="showPage('messages', this)">
+                <span>✉</span><small>Messages</small>
+            </button>
+            <button class="nav-item" type="button" onclick="showPage('documents', this)">
+                <span>▤</span><small>Cours</small>
+            </button>
+            <button class="nav-item" type="button" onclick="showPage('profile', this)">
+                <span>◉</span><small>Profil</small>
+            </button>
+        </nav>
+    </div>
+
+    <!-- MESSAGE TEMPORAIRE -->
+    <div id="toast" class="toast" aria-live="polite"></div>
+
+    <!-- JAVASCRIPT -->
+    <script type="module" src="./Js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+:root {
+  --primary: #0878b9;
+  --primary-dark: #07558c;
+  --secondary: #5146e5;
+  --purple: #8060ed;
+  --navy: #10152f;
+  --background: #f5f6fc;
+  --white: #ffffff;
+  --text: #20243a;
+  --muted: #85899e;
+  --border: #eceef5;
+  --success: #20b486;
+  --danger: #ef4444;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.avatar-blue { background: linear-gradient(135deg, #2563eb, #60a5fa); }
+.avatar-purple { background: linear-gradient(135deg, #7c3aed, #c084fc); }
+.avatar-orange { background: linear-gradient(135deg, #ea580c, #fb923c); }
+.avatar-green { background: linear-gradient(135deg, #059669, #34d399); }
+.avatar-navy { background: linear-gradient(135deg, #10152f, #1e293b); }
+
+/* Animation helpers */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

@@ -1,0 +1,7 @@
+{
+  "name": "ISSEG Connect",
+  "description": "Réseau social et éducatif des étudiants de l'Institut Supérieur des Sciences de l'Éducation de Guinée (ISSEG).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

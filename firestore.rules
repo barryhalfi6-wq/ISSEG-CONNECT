@@ -1,0 +1,109 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isUser(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // 1. Users Collection
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId);
+      allow list: if isSignedIn();
+      allow create: if isUser(userId) && isValidId(userId) && incoming().uid == request.auth.uid;
+      allow update: if isUser(userId) && isValidId(userId) && incoming().uid == existing().uid;
+      allow delete: if false;
+
+      // Carnet de stage subcollection
+      match /stages/{stageId} {
+        allow get, list: if isSignedIn() && (request.auth.uid == userId);
+        allow create, update, delete: if isSignedIn() && (request.auth.uid == userId);
+      }
+    }
+
+    // 2. Posts Collection
+    match /posts/{postId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(postId) && incoming().authorId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(postId);
+      allow delete: if isSignedIn() && isValidId(postId);
+
+      // Comments subcollection
+      match /comments/{commentId} {
+        allow get, list: if isSignedIn() && isValidId(postId);
+        allow create: if isSignedIn() && isValidId(postId) && isValidId(commentId) && incoming().authorId == request.auth.uid;
+        allow update: if isSignedIn() && isValidId(postId) && isValidId(commentId);
+        allow delete: if isSignedIn() && isValidId(postId) && isValidId(commentId);
+      }
+    }
+
+    // 3. Study Groups
+    match /groups/{groupId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(groupId) && incoming().creatorId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(groupId) && (
+        (existing().creatorId == request.auth.uid) ||
+        (incoming().diff(existing()).affectedKeys().hasOnly(['members']))
+      );
+      allow delete: if isSignedIn() && isValidId(groupId);
+
+      // Group Messages
+      match /messages/{messageId} {
+        allow get, list: if isSignedIn() && isValidId(groupId);
+        allow create: if isSignedIn() && isValidId(groupId) && isValidId(messageId) && incoming().authorId == request.auth.uid;
+        allow delete: if isSignedIn() && isValidId(groupId) && isValidId(messageId);
+      }
+    }
+
+    // 4. Conversations & Direct Messages
+    match /conversations/{conversationId} {
+      allow get: if isSignedIn() && isValidId(conversationId) && (resource == null || (request.auth.uid in resource.data.participants));
+      allow list: if isSignedIn() && (request.auth.uid in resource.data.participants);
+      allow create: if isSignedIn() && isValidId(conversationId) && (request.auth.uid in incoming().participants);
+      allow update: if isSignedIn() && isValidId(conversationId) && (request.auth.uid in existing().participants);
+
+      match /messages/{messageId} {
+        allow get, list: if isSignedIn() && isValidId(conversationId);
+        allow create: if isSignedIn() && isValidId(conversationId) && isValidId(messageId) && incoming().senderId == request.auth.uid;
+        allow delete: if isSignedIn() && isValidId(conversationId) && isValidId(messageId);
+      }
+    }
+
+    // 5. Course Documents & Academic Resources
+    match /documents/{documentId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(documentId) && incoming().authorId == request.auth.uid;
+      allow update, delete: if isSignedIn() && isValidId(documentId);
+    }
+
+    // 6. User Notifications
+    match /notifications/{notificationId} {
+      allow get: if isSignedIn() && isValidId(notificationId) && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(notificationId);
+      allow update, delete: if isSignedIn() && isValidId(notificationId) && existing().userId == request.auth.uid;
+    }
+  }
+}
