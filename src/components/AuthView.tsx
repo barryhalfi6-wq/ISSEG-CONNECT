@@ -21,11 +21,25 @@ export const AuthView: React.FC<AuthViewProps> = ({ onNotify }) => {
   const [lastName, setLastName] = useState('');
   const [registerEmail, setRegisterEmail] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
+  const [registerConfirmPassword, setRegisterConfirmPassword] = useState('');
+  const [registerPhone, setRegisterPhone] = useState('');
   const [department, setDepartment] = useState('Sciences');
   const [program, setProgram] = useState('Mathématiques-Physique');
   const [level, setLevel] = useState('Licence 1');
   const [registerIne, setRegisterIne] = useState('');
   const [registerCardImage, setRegisterCardImage] = useState<string | null>(null);
+
+  // Password Security Firewall evaluation
+  const getPasswordFirewallScore = (pwd: string) => {
+    let score = 0;
+    if (pwd.length >= 8) score += 25;
+    if (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd)) score += 25;
+    if (/[0-9]/.test(pwd)) score += 25;
+    if (/[^A-Za-z0-9]/.test(pwd)) score += 25;
+    return score;
+  };
+
+  const pwdScore = getPasswordFirewallScore(registerPassword);
 
   const handleCardFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -64,7 +78,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onNotify }) => {
     const code = err?.code || '';
     if (code.includes('auth/email-already-in-use')) return 'Cet email est déjà associé à un compte.';
     if (code.includes('auth/invalid-email')) return 'Adresse email invalide.';
-    if (code.includes('auth/weak-password')) return 'Mot de passe trop court (6 caractères minimum).';
+    if (code.includes('auth/weak-password')) return 'Mot de passe trop court pour le pare-feu de sécurité.';
     if (code.includes('auth/invalid-credential') || code.includes('auth/wrong-password') || code.includes('auth/user-not-found')) {
       return 'Email ou mot de passe incorrect.';
     }
@@ -95,14 +109,34 @@ export const AuthView: React.FC<AuthViewProps> = ({ onNotify }) => {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!firstName.trim() || !lastName.trim() || !registerEmail.trim() || !registerPassword) {
-      setError('Veuillez remplir tous les champs obligatoires.');
+
+    // Mandatory data verification for all users
+    if (!firstName.trim() || !lastName.trim() || !registerEmail.trim() || !registerPassword || !registerConfirmPassword || !registerPhone.trim()) {
+      setError('Exigence de sécurité : Tout le monde doit fournir ses données complètes (nom, email, téléphone, filière, etc.).');
       return;
     }
-    if (registerPassword.length < 6) {
-      setError('Le mot de passe doit comporter au moins 6 caractères.');
+
+    if (registerPassword !== registerConfirmPassword) {
+      setError('Les mots de passe ne correspondent pas.');
       return;
     }
+
+    if (pwdScore < 50) {
+      setError('Pare-feu de sécurité : Le mot de passe est trop faible. Il doit comporter au moins 8 caractères avec un mélange de lettres et de chiffres.');
+      return;
+    }
+
+    const cleanIne = registerIne.trim().toUpperCase();
+    if (!cleanIne) {
+      setError('Numéro INE obligatoire pour la vérification académique.');
+      return;
+    }
+
+    if (!registerCardImage) {
+      setError('Veuillez fournir la photo de votre Carte Unique de l\'Étudiant ISSEG.');
+      return;
+    }
+
     setLoading(true);
     try {
       await register({
@@ -113,8 +147,9 @@ export const AuthView: React.FC<AuthViewProps> = ({ onNotify }) => {
         department,
         program,
         level,
-        ine: registerIne.trim() || undefined,
-        studentCardPhotoUrl: registerCardImage || undefined
+        ine: cleanIne,
+        studentCardPhotoUrl: registerCardImage,
+        bio: `Étudiant(e) à l'ISSEG Lambanyi · Contact : ${registerPhone.trim()}`
       });
       onNotify('Compte créé avec succès ! Bienvenue à l\'ISSEG.', 'success');
     } catch (err: any) {
@@ -300,16 +335,59 @@ export const AuthView: React.FC<AuthViewProps> = ({ onNotify }) => {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Mot de passe</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Téléphone / WhatsApp (Guinée) *</label>
+              <input
+                type="tel"
+                required
+                value={registerPhone}
+                onChange={(e) => setRegisterPhone(e.target.value)}
+                placeholder="+224 620 00 00 00"
+                className="w-full px-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#0878b9]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                <span>Mot de passe (Sécurisé par Pare-feu) *</span>
+                <span className={`text-[10px] font-bold ${
+                  pwdScore >= 75 ? 'text-emerald-600' : pwdScore >= 50 ? 'text-amber-600' : 'text-rose-500'
+                }`}>
+                  {pwdScore >= 75 ? '🛡️ Pare-feu Sécurisé' : pwdScore >= 50 ? '🟡 Force Moyenne' : '⚠️ Faible (Min 8 car.)'}
+                </span>
+              </label>
               <div className="relative">
                 <Lock className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
                 <input
                   type="password"
                   required
-                  minLength={6}
                   value={registerPassword}
                   onChange={(e) => setRegisterPassword(e.target.value)}
-                  placeholder="6 caractères minimum"
+                  placeholder="8 caractères minimum avec chiffres et lettres"
+                  className="w-full pl-8 pr-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#0878b9]"
+                />
+              </div>
+
+              {/* Firewall Security Progress Bar */}
+              <div className="w-full bg-slate-100 h-1.5 rounded-full mt-1.5 overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-300 ${
+                    pwdScore >= 75 ? 'bg-emerald-500' : pwdScore >= 50 ? 'bg-amber-500' : 'bg-rose-500'
+                  }`}
+                  style={{ width: `${Math.max(pwdScore, 10)}%` }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Confirmer le mot de passe *</label>
+              <div className="relative">
+                <Lock className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
+                <input
+                  type="password"
+                  required
+                  value={registerConfirmPassword}
+                  onChange={(e) => setRegisterConfirmPassword(e.target.value)}
+                  placeholder="Répétez le mot de passe"
                   className="w-full pl-8 pr-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#0878b9]"
                 />
               </div>

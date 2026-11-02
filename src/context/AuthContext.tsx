@@ -28,6 +28,7 @@ interface AuthContextType {
     level: string;
     ine?: string;
     studentCardPhotoUrl?: string;
+    bio?: string;
   }) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
@@ -106,6 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     level: string;
     ine?: string;
     studentCardPhotoUrl?: string;
+    bio?: string;
   }) => {
     const cred = await createUserWithEmailAndPassword(auth, data.email.trim(), data.password);
     const fullName = `${data.firstName.trim()} ${data.lastName.trim()}`;
@@ -125,6 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       level: data.level,
       institution: 'ISSEG (Lambanyi, Ratoma)',
       role: 'student',
+      bio: data.bio,
       verificationStatus: isCardProvided ? 'approved' : 'missing_card'
     };
 

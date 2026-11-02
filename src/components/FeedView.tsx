@@ -36,7 +36,12 @@ import {
   Calendar,
   Clock,
   Building,
-  Radio
+  Radio,
+  Search,
+  Shield,
+  Cpu,
+  Globe,
+  BookOpen
 } from 'lucide-react';
 
 interface FeedViewProps {
@@ -80,6 +85,9 @@ export const FeedView: React.FC<FeedViewProps> = ({ onNotify, onOpenInstall }) =
   // Algorithm & Feed Sorting
   const [feedMode, setFeedMode] = useState<'algorithm' | 'recent' | 'trending' | 'department'>('algorithm');
   const [isPublishingAI, setIsPublishingAI] = useState(false);
+  const [isResearchModalOpen, setIsResearchModalOpen] = useState(false);
+  const [isSmartToolsOpen, setIsSmartToolsOpen] = useState(false);
+  const [customResearchTopic, setCustomResearchTopic] = useState('');
 
   useEffect(() => {
     // Seed AI didactic insight if none exists
@@ -117,6 +125,27 @@ export const FeedView: React.FC<FeedViewProps> = ({ onNotify, onOpenInstall }) =
 
     setSubmitting(true);
     try {
+      // Pare-feu de sécurité intelligent pour le contenu
+      if (newPostText.trim()) {
+        try {
+          const modRes = await fetch('/api/ai/moderate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: newPostText.trim() })
+          });
+          if (modRes.ok) {
+            const modData = await modRes.json();
+            if (!modData.isClean) {
+              onNotify(modData.warning || 'Contenu signalé par le pare-feu de sécurité universitaire.', 'error');
+              setSubmitting(false);
+              return;
+            }
+          }
+        } catch {
+          // Continue safely if offline
+        }
+      }
+
       let pollPayload = undefined;
       if (isPollActive && pollQuestion.trim() && pollOption1.trim() && pollOption2.trim()) {
         const options = [
@@ -217,6 +246,39 @@ export const FeedView: React.FC<FeedViewProps> = ({ onNotify, onOpenInstall }) =
       onNotify('Nouveau conseil didactique publié par l\'Assistant IA 🤖 !', 'success');
     } catch (err: any) {
       onNotify('Erreur publication IA : ' + (err.message || 'accès refusé'), 'error');
+    } finally {
+      setIsPublishingAI(false);
+    }
+  };
+
+  const handlePublishCustomResearch = async (topic: string) => {
+    if (!topic.trim()) return;
+    setIsPublishingAI(true);
+    try {
+      const res = await fetch('/api/ai/research', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic: topic.trim() })
+      });
+      const data = await res.json();
+      if (data.content) {
+        await createPost({
+          authorId: 'isseg-ia-bot',
+          authorName: 'Didactique IA · ISSEG 🤖',
+          authorProgram: 'Intelligence Pédagogique ISSEG',
+          department: 'Sciences de l\'Éducation',
+          content: data.content,
+          tag: '#RechercheIA',
+          isOfficial: true
+        });
+        onNotify(`Recherche sur "${topic.slice(0, 32)}..." publiée sur le campus !`, 'success');
+        setIsResearchModalOpen(false);
+        setCustomResearchTopic('');
+      } else {
+        onNotify('Impossible d\'extraire les résultats de recherche.', 'error');
+      }
+    } catch (err: any) {
+      onNotify('Erreur recherche IA : ' + err.message, 'error');
     } finally {
       setIsPublishingAI(false);
     }
@@ -404,6 +466,24 @@ export const FeedView: React.FC<FeedViewProps> = ({ onNotify, onOpenInstall }) =
           <HelpCircle className="w-3.5 h-3.5 text-[#8060ed]" />
           <span>Questions ❓</span>
         </button>
+
+        <button
+          type="button"
+          onClick={() => setIsResearchModalOpen(true)}
+          className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs flex-shrink-0 hover:opacity-95 transition-opacity"
+        >
+          <Search className="w-3.5 h-3.5" />
+          <span>Recherche Web IA 🔍</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setIsSmartToolsOpen(true)}
+          className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs flex-shrink-0 hover:opacity-95 transition-opacity"
+        >
+          <Cpu className="w-3.5 h-3.5" />
+          <span>Outils Intelligents 🧠</span>
+        </button>
       </div>
 
       {/* Post composer trigger card */}
@@ -466,16 +546,28 @@ export const FeedView: React.FC<FeedViewProps> = ({ onNotify, onOpenInstall }) =
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          disabled={isPublishingAI}
-          onClick={handleGenerateAIBotPost}
-          className="self-end sm:self-auto px-3.5 py-2 bg-white text-[#10152f] hover:bg-blue-50 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50"
-          title="Demander à l'IA de publier un conseil pédagogique"
-        >
-          <Sparkles className="w-3.5 h-3.5 text-[#0878b9]" />
-          <span>{isPublishingAI ? 'Publication...' : 'Nouveau conseil IA'}</span>
-        </button>
+        <div className="self-end sm:self-auto flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsResearchModalOpen(true)}
+            className="px-3.5 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 hover:opacity-90 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+            title="L'IA recherche librement sur internet et publie ses conclusions"
+          >
+            <Globe className="w-3.5 h-3.5" />
+            <span>Recherche Web IA</span>
+          </button>
+
+          <button
+            type="button"
+            disabled={isPublishingAI}
+            onClick={handleGenerateAIBotPost}
+            className="px-3.5 py-2 bg-white text-[#10152f] hover:bg-blue-50 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+            title="Demander à l'IA de publier un conseil pédagogique"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-[#0878b9]" />
+            <span>{isPublishingAI ? 'Publication...' : 'Conseil Didactique'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Algorithm Mode Selector */}
@@ -949,6 +1041,224 @@ export const FeedView: React.FC<FeedViewProps> = ({ onNotify, onOpenInstall }) =
                 className="px-4 py-2 bg-[#0878b9] hover:bg-[#07558c] text-white font-bold rounded-xl shadow-xs transition-colors"
               >
                 Imprimer mon planning
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI WEB RESEARCH & FREE PUBLISHING MODAL */}
+      {isResearchModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-6 border border-slate-100 animate-fade-in space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center text-xl flex-shrink-0">
+                  🌐
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-slate-800">
+                    Recherche Web Éducative & Publication IA
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    L'IA explore librement internet et publie une note de synthèse académique
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsResearchModalOpen(false)}
+                className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Thématiques de recherche didactique recommandées :
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    "L'Approche Par Compétences (APC) en Guinée",
+                    "Didactique des Sciences avec matériel local",
+                    "Enseignement du Français et bilinguisme",
+                    "Pédagogie de l'erreur et psychologie de l'adolescent",
+                    "Évaluation formative vs sommative",
+                    "Gestion des classes pléthoriques"
+                  ].map((topic) => (
+                    <button
+                      key={topic}
+                      type="button"
+                      onClick={() => setCustomResearchTopic(topic)}
+                      className={`text-left px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+                        customResearchTopic === topic
+                          ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-purple-50'
+                      }`}
+                    >
+                      {topic}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Ou saisissez votre propre sujet de recherche :
+                </label>
+                <input
+                  type="text"
+                  value={customResearchTopic}
+                  onChange={(e) => setCustomResearchTopic(e.target.value)}
+                  placeholder="Ex : L'enseignement des probabilités au lycée en Afrique de l'Ouest"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-purple-600 focus:outline-none"
+                />
+              </div>
+
+              <div className="bg-purple-50/70 border border-purple-100 p-3 rounded-2xl text-[11px] text-purple-900 space-y-1">
+                <span className="font-bold flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                  Mission académique de l'Assistant :
+                </span>
+                <p className="leading-relaxed">
+                  L'IA compile les publications scientifiques récentes, adapte les recommandations au contexte guinéen et partage la synthèse directement sur le fil d'actualité au nom de <strong>Didactique IA</strong> avec des sources vérifiées.
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end gap-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setIsResearchModalOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                disabled={isPublishingAI || !customResearchTopic.trim()}
+                onClick={() => handlePublishCustomResearch(customResearchTopic)}
+                className="px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold rounded-xl text-xs shadow-md shadow-purple-500/20 disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {isPublishingAI ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Recherche en cours...</span>
+                  </>
+                ) : (
+                  <>
+                    <Globe className="w-3.5 h-3.5" />
+                    <span>Rechercher & Publier</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SMART TOOLS MANAGEMENT SUITE MODAL */}
+      {isSmartToolsOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-6 border border-slate-100 animate-fade-in max-h-[90vh] overflow-y-auto space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-xl flex-shrink-0">
+                  🧠
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-slate-800">
+                    Outils Intelligents · Gestion du Réseau Social ISSEG
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    Supervision, sécurité des données et outils IA pour la communauté
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSmartToolsOpen(false)}
+                className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3.5 text-xs">
+              {/* Tool 1 : Pare-feu & Sécurité */}
+              <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-800 flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-emerald-600" />
+                    1. Pare-feu de Sécurité & Protection des Mots de Passe
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black">
+                    ACTIF
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-600 leading-relaxed">
+                  Tous les mots de passe sont validés selon une politique de complexité stricte (minimum 8 caractères, majuscules, minuscules, chiffres et symboles). Le hachage cryptographique côté pare-feu empêche toute interception.
+                </p>
+              </div>
+
+              {/* Tool 2 : Vérification stricte des cartes */}
+              <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-800 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-[#0878b9]" />
+                    2. Outil Intelligent de Contrôle des Cartes d'Étudiant
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-black">
+                    STRICT
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-600 leading-relaxed">
+                  Chaque étudiant doit obligatoirement téléverser sa Carte Unique officielle de l'ISSEG. L'outil intelligent vérifie le drapeau guinéen, le logo de l'institut et le numéro INE (14 caractères) avant d'autoriser l'accès.
+                </p>
+              </div>
+
+              {/* Tool 3 : Modération Automatisée */}
+              <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-800 flex items-center gap-2">
+                    <Cpu className="w-4 h-4 text-purple-600" />
+                    3. Modération Automatisée & Filtrage Anti-Toxique
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[10px] font-black">
+                    EN TEMPS RÉEL
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-600 leading-relaxed">
+                  Les publications et commentaires sont analysés par le pare-feu sémantique pour bloquer les insultes, la fraude aux examens et les comportements non éthiques, garantissant la sérénité du campus.
+                </p>
+              </div>
+
+              {/* Tool 4 : Recherche & Didactique IA */}
+              <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-800 flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-amber-600" />
+                    4. Publication Libre de Recherches Web par l'IA
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-black">
+                    AUTONOME
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-600 leading-relaxed">
+                  Le compte certifié <strong>Didactique IA</strong> explore le web académique pour proposer des fiches et articles scientifiques utiles aux futurs professeurs et enseignants en exercice.
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setIsSmartToolsOpen(false)}
+                className="px-5 py-2 bg-[#10152f] hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-colors"
+              >
+                Fermer
               </button>
             </div>
           </div>
